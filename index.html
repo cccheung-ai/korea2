@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOREA 韓文小學堂 - 終極穩定版</title>
+    <style>
+        :root { --main: #cd2e3a; --sub: #0047a0; --win: #00b894; --gold: #f1c40f; --fail: #ff7675; --nav: #dfe6e9; }
+        body { font-family: 'Comic Sans MS', 'Microsoft JhengHei', sans-serif; background: #fdfdfd; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 40px 20px; gap: 20px; flex-wrap: wrap; }
+        #login-screen { background: white; width: 400px; padding: 40px; border-radius: 40px; border: 6px solid var(--main); text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.1); margin-top: 50px; }
+        .input-box { width: 85%; padding: 12px; margin: 10px 0; border-radius: 15px; border: 3px solid var(--sub); font-size: 20px; text-align: center; font-weight: bold; }
+        .game-container { display: none; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; }
+        .card { background: white; width: 420px; padding: 25px; border-radius: 40px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); text-align: center; border: 6px solid var(--main); position: relative; }
+        .score-board { background: white; width: 150px; padding: 20px; border-radius: 30px; border: 4px solid var(--sub); max-height: 620px; overflow-y: auto; }
+        .score-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-weight: bold; font-size: 14px; }
+        .current-row { background: #f1f7ff; color: var(--main); border-radius: 8px; border: 1px solid var(--main); }
+        .explain-box { background: #fffafa; padding: 15px; border-radius: 20px; margin: 10px 0; border: 2px dashed var(--main); min-height: 80px; text-align: left; }
+        #explain-text { font-size: 18px; color: #444; line-height: 1.5; font-weight: bold; }
+        .word-box { background: #fff; border: 4px solid var(--sub); padding: 20px; border-radius: 25px; margin: 15px 0; }
+        .ko-text { font-size: 38px; color: var(--main); font-weight: bold; display: block; min-height: 50px; }
+        .btn { border: none; padding: 12px; border-radius: 50px; font-size: 17px; cursor: pointer; width: 100%; margin: 6px 0; font-weight: bold; transition: 0.3s; }
+        .btn-ko { background: var(--main); color: white; box-shadow: 0 4px 0 #8b1d26; }
+        .btn-sub { background: var(--sub); color: white; box-shadow: 0 4px 0 #003375; }
+        .btn-mic { background: var(--win); color: white; box-shadow: 0 5px 0 #00897b; height: 75px; font-size: 20px; margin-top: 10px; }
+        
+        .nav-group-top { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        .btn-nav { background: var(--nav); color: #555; width: 48%; font-size: 14px; }
+        .btn-finish-wrap { margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
+        .btn-finish { background: var(--fail); color: white; box-shadow: 0 4px 0 #d63031; width: 80%; }
+        
+        .recording { background: var(--fail) !important; animation: pulse 1s infinite; }
+        #score-msg { font-size: 20px; font-weight: bold; margin: 10px 0; min-height: 50px; display: flex; align-items: center; justify-content: center; text-align: center; }
+        @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(0.95);} 100% {transform: scale(1);} }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <h1>🇰🇷 韓文小學堂</h1>
+    <p style="font-weight: bold;">請輸入學生資料：</p>
+    <input type="text" id="class-input" class="input-box" placeholder="班別 (例如: 1A)">
+    <input type="number" id="no-input" class="input-box" placeholder="學號 (例如: 05)">
+    <button class="btn btn-ko" onclick="startGame()" style="font-size: 22px;">開始挑戰 !</button>
+</div>
+
+<div id="game-area" class="game-container">
+    <div class="score-board">
+        <h3 style="color:var(--sub); text-align:center; font-size:16px; margin-top:0;">
+            班別: <span id="display-class">--</span><br>
+            學號: <span id="display-no">--</span>
+        </h3>
+        <div id="score-list"></div>
+    </div>
+    
+    <div class="card">
+        <div id="progress" style="font-weight:bold; color:var(--main); margin-bottom:10px;">關卡：1 / 20</div>
+        <div class="explain-box"><div id="explain-text">聽講解先啦！</div></div>
+        
+        <div id="main-play-area">
+            <div class="word-box">
+                <span class="ko-text" id="target-ko">안녕하세요</span>
+                <div style="color:#636e72; font-size:20px; font-weight:bold;" id="target-mean">你好</div>
+            </div>
+            <button class="btn" style="background:#f1f2f6; color:#555; border:1px solid #ddd;" onclick="playExplain()">💬 1. 聽廣東話解釋</button>
+            <button class="btn btn-sub" onclick="playKorean()">🔊 2. 聽標準韓文示範</button>
+            <button class="btn btn-mic" id="micBtn" onclick="toggleMic()">🎙️ 3. 撳一下開始跟住讀</button>
+            
+            <div id="score-msg"></div>
+            
+            <div class="nav-group-top">
+                <button class="btn btn-nav" onclick="prevLevel()">⬅️ 上一題</button>
+                <button class="btn btn-nav" onclick="skipLevel()">跳過 ➡️</button>
+            </div>
+
+            <div class="btn-finish-wrap">
+                <button class="btn btn-finish" onclick="confirmSubmit()">🚩 提交成績並結束</button>
+            </div>
+        </div>
+
+        <div id="final-area" style="display:none;">
+            <h2 style="color: var(--main);">🎊 挑戰結束！</h2>
+            <p style="font-weight: bold;">您的最終平均分為：</p>
+            <div style="font-size: 75px; color: var(--gold); font-weight: bold;" id="total-avg">0</div>
+            <div id="save-status" style="font-weight: bold; color: var(--win);">成績正在上傳中...</div>
+            <button class="btn btn-ko" style="margin-top: 30px;" onclick="location.reload()">🔄 下一位同學</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const levels = [
+        { ko: "안녕하세요", mean: "你好", explain: "韓文最基本嘅打招呼。" },
+        { ko: "감사합니다", mean: "多謝", explain: "非常有禮貌嘅多謝。" },
+        { ko: "미안합니다", mean: "對唔住", explain: "正式道歉嘅講法。" },
+        { ko: "괜찮아요", mean: "唔緊要", explain: "回應人哋問候或者道歉。" },
+        { ko: "네, 맞아요", mean: "係呀，啱喇", explain: "表示認同人哋講嘅嘢。" },
+        { ko: "아니요, 없어요", mean: "唔係，冇呀", explain: "否定或者話冇嘢。" },
+        { ko: "사랑해요", mean: "我愛你", explain: "對屋企人表達愛意。" },
+        { ko: "배고파요", mean: "我肚餓喇", explain: "想食嘢嘅時候講。" },
+        { ko: "맛있어요", mean: "好味", explain: "讚個嘢食好食。" },
+        { ko: "잘 가요", mean: "再見", explain: "請對方慢行、再見。" },
+        { ko: "축하해요", mean: "恭喜你", explain: "慶祝好事發生時講。" },
+        { ko: "진짜요?", mean: "真係㗎？", explain: "覺得驚訝時講。" },
+        { ko: "대박이에요", mean: "真係勁呀", explain: "見到好勁嘅嘢時用。" },
+        { ko: "화이팅", mean: "加油", explain: "幫人加油打氣！" },
+        { ko: "좋아요", mean: "好呀", explain: "表示贊同。" },
+        { ko: "잠시만요", mean: "等一陣", explain: "請人等一等。" },
+        { ko: "알겠어요", mean: "我知道喇", explain: "明白咗對方嘅話。" },
+        { ko: "예뻐요", mean: "好靚", explain: "讚美嘢或者人。" },
+        { ko: "반가워요", mean: "很高興見到你", explain: "認識新朋友時講。" },
+        { ko: "최고예요", mean: "你是最棒的", explain: "讚人哋係最正嘅！" }
+    ];
+
+    let cur = 0, scores = new Array(20).fill(0), studentClass = "", studentNo = "";
+    const synth = window.speechSynthesis;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let rec = null;
+    let micTimeout = null;
+
+    function initRec() {
+        if (!SpeechRecognition) return;
+        if (rec) { try { rec.stop(); } catch(e) {} }
+        rec = new SpeechRecognition();
+        rec.lang = 'ko-KR';
+        rec.continuous = false;
+        rec.interimResults = false;
+
+        rec.onstart = () => {
+            clearTimeout(micTimeout);
+            document.getElementById('micBtn').classList.add('recording');
+            document.getElementById('score-msg').innerText = "🎤 聽緊你讀...";
+            document.getElementById('score-msg').style.color = "#666";
+            micTimeout = setTimeout(() => {
+                if(rec) { rec.stop(); document.getElementById('score-msg').innerText = "⚠️ 沒偵測到聲音，請再點擊一次"; }
+            }, 6000);
+        };
+
+        rec.onend = () => {
+            document.getElementById('micBtn').classList.remove('recording');
+            clearTimeout(micTimeout);
+        };
+
+        rec.onresult = (e) => {
+            clearTimeout(micTimeout);
+            const speech = e.results[0][0].transcript.replace(/[\s\.\?\!]/g, "");
+            const target = levels[cur].ko.replace(/[\s\.\?\!]/g, "");
+            let score = 0;
+
+            if (speech === target) score = 100;
+            else if (speech.includes(target) || target.includes(speech)) score = 85;
+            else {
+                let matches = 0;
+                target.split('').forEach(char => { if(speech.includes(char)) matches++; });
+                let ratio = matches / target.length;
+                if (ratio >= 0.4) score = 75; else if (ratio >= 0.1) score = 60;
+            }
+
+            if (score >= 60) {
+                document.getElementById('score-msg').innerText = score + "分！ 잘했어요!";
+                document.getElementById('score-msg').style.color = "var(--win)";
+                scores[cur] = score; 
+                document.getElementById(`val-${cur}`).innerText = score + "分";
+                setTimeout(nextLevel, 1000);
+            } else {
+                document.getElementById('score-msg').innerText = "❌ 我覺得唔啱，請你再講過";
+                document.getElementById('score-msg').style.color = "var(--fail)";
+            }
+        };
+
+        rec.onerror = () => { clearTimeout(micTimeout); initRec(); };
+    }
+
+    function toggleMic() { 
+        if(!rec) initRec();
+        try { rec.start(); } catch(e) { rec.stop(); setTimeout(() => { try { rec.start(); } catch(err) { initRec(); rec.start(); } }, 300); } 
+    }
+
+    function startGame() {
+        studentClass = document.getElementById('class-input').value.trim();
+        studentNo = document.getElementById('no-input').value.trim();
+        if(!studentClass || !studentNo) return alert("請輸入完整的班別及學號！");
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('game-area').style.display = 'flex';
+        document.getElementById('display-class').innerText = studentClass;
+        document.getElementById('display-no').innerText = studentNo;
+        initRec(); initScoreBoard();
+    }
+
+    function initScoreBoard() {
+        const list = document.getElementById('score-list');
+        list.innerHTML = "";
+        levels.forEach((_, i) => list.innerHTML += `<div class="score-item" id="row-${i}"><span>#${i+1}</span><span id="val-${i}">---</span></div>`);
+        updateHighlight();
+    }
+
+    function updateHighlight() {
+        document.querySelectorAll('.score-item').forEach(el => el.classList.remove('current-row'));
+        const row = document.getElementById(`row-${cur}`);
+        if(row) row.classList.add('current-row');
+    }
+
+    function playExplain() {
+        synth.cancel();
+        document.getElementById('explain-text').innerText = levels[cur].explain;
+        const m = new SpeechSynthesisUtterance(levels[cur].explain); m.lang = 'zh-HK'; synth.speak(m);
+    }
+
+    function playKorean() {
+        synth.cancel();
+        const m = new SpeechSynthesisUtterance(levels[cur].ko); m.lang = 'ko-KR'; m.rate = 0.8; synth.speak(m);
+    }
+
+    function nextLevel() { if(cur < 19) { cur++; initRec(); refreshUI(); } else showFinal(); }
+    function prevLevel() { if(cur > 0) { cur--; initRec(); refreshUI(); } }
+    function skipLevel() { scores[cur] = 0; document.getElementById(`val-${cur}`).innerText = "跳過"; nextLevel(); }
+
+    function refreshUI() {
+        document.getElementById('progress').innerText = `關卡：${cur+1} / 20`;
+        document.getElementById('target-ko').innerText = levels[cur].ko;
+        document.getElementById('target-mean').innerText = levels[cur].mean;
+        document.getElementById('score-msg').innerText = "";
+        document.getElementById('explain-text').innerText = "聽講解先啦！";
+        updateHighlight();
+    }
+
+    function confirmSubmit() {
+        if(confirm("確定要提交目前的成績並結束嗎？未完成的題目會計算為 0 分。")) {
+            showFinal();
+        }
+    }
+
+    function showFinal() {
+        document.getElementById('main-play-area').style.display = 'none';
+        document.getElementById('final-area').style.display = 'block';
+        const avg = Math.round(scores.reduce((a,b)=>a+b, 0) / 20);
+        document.getElementById('total-avg').innerText = avg;
+        submitToGoogleForm(studentClass, studentNo, avg);
+    }
+
+    function submitToGoogleForm(cls, no, score) {
+        const studentInfo = `${cls}_(${no})`;
+        const formID = "1FAIpQLSfmRwWSaqKaZ0DeHcq8J9Z50eaa2SN6OICqYizWl7zbxcrUoA"; 
+        const form = document.createElement("form");
+        form.method = "POST"; form.action = `https://docs.google.com/forms/d/e/${formID}/formResponse`;
+        form.target = "hidden_iframe";
+        const in1 = document.createElement("input"); in1.name = "entry.788411312"; in1.value = studentInfo; form.appendChild(in1);
+        const in2 = document.createElement("input"); in2.name = "entry.488980092"; in2.value = score; form.appendChild(in2);
+        const ifr = document.createElement("iframe"); ifr.name = "hidden_iframe"; ifr.style.display = "none";
+        document.body.appendChild(ifr); document.body.appendChild(form);
+        form.submit();
+        setTimeout(() => document.getElementById('save-status').innerText = "✅ 成績已成功上傳！", 1500);
+    }
+</script>
+</body>
+</html>
